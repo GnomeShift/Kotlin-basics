@@ -13,6 +13,7 @@ There are my study tasks.
 
 ## 🚀Quick navigation
 * [First 10 tasks](src/first10)
+* [Ktor](ktor/src/main/kotlin)
 
 # ⚙️Configuration
 Just open this project in your IDE and run any `.kt` file.
