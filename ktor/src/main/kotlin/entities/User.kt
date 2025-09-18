@@ -1,4 +1,4 @@
-package com.gnomeshift
+package com.gnomeshift.entities
 
 import kotlinx.serialization.Serializable
 

@@ -4,3 +4,9 @@ ktor:
       - com.gnomeshift.ApplicationKt.module
   deployment:
     port: 8080
+
+db:
+  driver: "$DB_DRIVER"
+  url: "$DB_URL"
+  user: "$DB_USER"
+  password: "$DB_PASSWORD"
