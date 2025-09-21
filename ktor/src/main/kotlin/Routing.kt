@@ -4,6 +4,8 @@ import com.gnomeshift.dao.ProductDAO
 import com.gnomeshift.entities.User
 import com.gnomeshift.dao.Result
 import com.gnomeshift.dao.UserDAO
+import com.gnomeshift.dto.ProductRequest
+import com.gnomeshift.dto.UserRequest
 import com.gnomeshift.entities.Product
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -70,14 +72,13 @@ fun Application.configureRouting() {
         get("/ping") {
             call.respondText("pong")
         }
-        // выборка всех
         route("/users") {
             get {
                 respondResult(call, UserDAO.getAll())
             }
             post {
-                val newUser = call.receive<User>()
-                respondResult(call, UserDAO.create(newUser.name, newUser.age))
+                val newUser = call.receive<UserRequest>()
+                respondResult(call, UserDAO.create(newUser))
             }
             route("/{id}") {
                 get {
@@ -98,7 +99,7 @@ fun Application.configureRouting() {
                     }
 
                     val updatedUser = call.receive<User>()
-                    respondResult(call, UserDAO.update(userId, updatedUser.name, updatedUser.age))
+                    respondResult(call, UserDAO.update(updatedUser))
                 }
                 delete {
                     val userId = call.parameters["id"]?.toIntOrNull()
@@ -116,8 +117,8 @@ fun Application.configureRouting() {
                 respondResult(call, ProductDAO.getAll())
             }
             post {
-                val newProduct = call.receive<Product>()
-                respondResult(call, ProductDAO.create(newProduct.name, newProduct.price))
+                val newProduct = call.receive<ProductRequest>()
+                respondResult(call, ProductDAO.create(newProduct))
             }
             route("/{id}") {
                 get {
@@ -138,7 +139,7 @@ fun Application.configureRouting() {
                     }
 
                     val updatedProduct = call.receive<Product>()
-                    respondResult(call, ProductDAO.update(productId, updatedProduct.name, updatedProduct.price))
+                    respondResult(call, ProductDAO.update(updatedProduct))
                 }
                 delete {
                     val productId = call.parameters["id"]?.toIntOrNull()

@@ -6,7 +6,7 @@ ktor:
     port: 8080
 
 db:
-  driver: "$DB_DRIVER"
-  url: "$DB_URL"
-  user: "$DB_USER"
-  password: "$DB_PASSWORD"
+  driver: "org.postgresql.Driver"
+  url: "jdbc:postgresql://localhost:5432/kotlin-basics"
+  user: ""
+  password: ""

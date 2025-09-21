@@ -1,28 +1,30 @@
 package com.gnomeshift.dao
 
+import com.gnomeshift.db.db
+import com.gnomeshift.dto.ProductRequest
 import com.gnomeshift.entities.Product
 import com.gnomeshift.entities.ProductEntity
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object ProductDAO {
-    fun create(name: String, price: Double): Result<Product> {
+    fun create(request: ProductRequest): Result<Product> {
         return try {
-            transaction {
+            transaction(db) {
                 val newProductEntity = ProductEntity.new {
-                    this.name = name
-                    this.price = price
+                    this.name = request.name
+                    this.price = request.price
                 }
                 Result.Success(newProductEntity.toDto())
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
     fun getById(id: Int): Result<Product> {
         return try {
-            transaction {
+            transaction(db) {
                 val productEntity = ProductEntity.findById(id)
 
                 if (productEntity != null) {
@@ -34,30 +36,30 @@ object ProductDAO {
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
     fun getAll(): Result<List<Product>> {
         return try {
-            transaction {
+            transaction(db) {
                 val products = ProductEntity.all().toList().map { it.toDto() }
                 Result.Success(products)
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
-    fun update(id: Int, newName: String, newPrice: Double): Result<Product> {
+    fun update(request: Product): Result<Product> {
         return try {
-            transaction {
-                val productEntity = ProductEntity.findById(id)
+            transaction(db) {
+                val productEntity = ProductEntity.findById(request.id)
 
                 if (productEntity != null) {
-                    productEntity.name = newName
-                    productEntity.price = newPrice
+                    productEntity.name = request.name
+                    productEntity.price = request.price
                     Result.Success(productEntity.toDto())
                 }
                 else {
@@ -66,13 +68,13 @@ object ProductDAO {
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
     fun delete(id: Int): Result<Unit> {
         return try {
-            transaction {
+            transaction(db) {
                 val productEntity = ProductEntity.findById(id)
 
                 if (productEntity != null) {
@@ -85,7 +87,7 @@ object ProductDAO {
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 }

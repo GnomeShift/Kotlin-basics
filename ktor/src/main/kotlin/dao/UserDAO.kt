@@ -1,28 +1,30 @@
 package com.gnomeshift.dao
 
+import com.gnomeshift.db.db
+import com.gnomeshift.dto.UserRequest
 import com.gnomeshift.entities.User
 import com.gnomeshift.entities.UserEntity
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object UserDAO {
-    fun create(name: String, age: Int): Result<User> {
+    fun create(request: UserRequest): Result<User> {
         return try {
-            transaction {
+            transaction(db) {
                 val newUserEntity = UserEntity.new {
-                    this.name = name
-                    this.age = age
+                    this.name = request.name
+                    this.age = request.age
                 }
                 Result.Success(newUserEntity.toDto())
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            throw Exception(e.message)
         }
     }
 
     fun getById(id: Int): Result<User> {
         return try {
-            transaction {
+            transaction(db) {
                 val userEntity = UserEntity.findById(id)
 
                 if (userEntity != null) {
@@ -34,30 +36,30 @@ object UserDAO {
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
     fun getAll(): Result<List<User>> {
         return try {
-            transaction {
+            transaction(db) {
                 val users = UserEntity.all().toList().map { it.toDto() }
                 Result.Success(users)
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
-    fun update(id: Int, newName: String, newAge: Int): Result<User> {
+    fun update(request: User): Result<User> {
         return try {
-            transaction {
-                val userEntity = UserEntity.findById(id)
+            transaction(db) {
+                val userEntity = UserEntity.findById(request.id)
 
                 if (userEntity != null) {
-                    userEntity.name = newName
-                    userEntity.age = newAge
+                    userEntity.name = request.name
+                    userEntity.age = request.age
                     Result.Success(userEntity.toDto())
                 }
                 else {
@@ -66,13 +68,13 @@ object UserDAO {
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 
     fun delete(id: Int): Result<Unit> {
         return try {
-            transaction {
+            transaction(db) {
                 val userEntity = UserEntity.findById(id)
 
                 if (userEntity != null) {
@@ -85,7 +87,7 @@ object UserDAO {
             }
         }
         catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(Exception(e.message))
         }
     }
 }
