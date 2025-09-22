@@ -5,7 +5,7 @@ out/
 
 ### Environment ###
 .env
-.pem
+*.pem
 
 ### Kotlin ###
 .kotlin

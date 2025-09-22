@@ -21,5 +21,7 @@ fun Application.configureDB() {
 
     transaction {
         SchemaUtils.create(UserService.Users, ProductService.Products)
+        SchemaUtils.addMissingColumnsStatements(UserService.Users, ProductService.Products)
+        SchemaUtils.createMissingTablesAndColumns(UserService.Users, ProductService.Products)
     }
 }

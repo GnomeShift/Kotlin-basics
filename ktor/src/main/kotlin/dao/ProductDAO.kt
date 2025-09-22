@@ -25,14 +25,8 @@ object ProductDAO {
     fun getById(id: Int): Result<Product> {
         return try {
             transaction(db) {
-                val productEntity = ProductEntity.findById(id)
-
-                if (productEntity != null) {
-                    Result.Success(productEntity.toDto())
-                }
-                else {
-                    Result.Error(Exception("Product not found"))
-                }
+                ProductEntity.findById(id)?.toDto()?.let { Result.Success(it) }
+                    ?: Result.Error(Exception("Product with id $id not found"))
             }
         }
         catch (e: Exception) {
@@ -43,8 +37,7 @@ object ProductDAO {
     fun getAll(): Result<List<Product>> {
         return try {
             transaction(db) {
-                val products = ProductEntity.all().toList().map { it.toDto() }
-                Result.Success(products)
+                Result.Success(ProductEntity.all().toList().map { it.toDto() })
             }
         }
         catch (e: Exception) {

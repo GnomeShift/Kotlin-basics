@@ -1,12 +1,9 @@
-package com.gnomeshift.entities
+package com.gnomeshift.security
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class User(
-    val id: Int,
-    var name: String,
-    var age: Int,
+data class LoginRequest(
     val username: String,
     val password: String // pragma: allowlist-secret
 )

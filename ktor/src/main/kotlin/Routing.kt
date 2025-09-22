@@ -4,34 +4,39 @@ import com.gnomeshift.dao.ProductDAO
 import com.gnomeshift.dao.Result
 import com.gnomeshift.dao.UserDAO
 import com.gnomeshift.dto.ProductRequest
-import com.gnomeshift.dto.UserRequest
+import com.gnomeshift.security.JwtResponse
+import com.gnomeshift.security.JwtService
+import com.gnomeshift.security.LoginRequest
+import com.gnomeshift.security.RegisterRequest
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.mindrot.jbcrypt.BCrypt
 
-suspend fun <T> respondResult(call: ApplicationCall, result: Result<T>) {
+suspend fun <T> ApplicationCall.respondResult(result: Result<T>) {
     when (result) {
         is Result.Success -> {
-            val status = when (call.request.httpMethod) {
+            val status = when (request.httpMethod) {
                 HttpMethod.Post -> HttpStatusCode.Created
                 HttpMethod.Delete -> HttpStatusCode.NoContent
                 else -> HttpStatusCode.OK
             }
 
             if (result.data is Unit) {
-                call.respond(status)
+                respond(status)
             }
             else {
-                call.respond(status, result.data!!)
+                respond(status, result.data!!)
             }
         }
         is Result.Error -> {
-            call.respond(HttpStatusCode.InternalServerError, result.exception)
+            respond(HttpStatusCode.InternalServerError, result.exception)
         }
     }
 }
@@ -70,83 +75,97 @@ fun Application.configureRouting() {
         get("/ping") {
             call.respondText("pong")
         }
-        route("/users") {
-            get {
-                respondResult(call, UserDAO.getAll())
+        post("/register") {
+            val request = call.receive<RegisterRequest>()
+
+            when (val result = UserDAO.create(request)) {
+                is Result.Success -> call.respond(HttpStatusCode.Created, result.data)
+                is Result.Error -> call.respondResult(result)
             }
-            post {
-                val newUser = call.receive<UserRequest>()
-                respondResult(call, UserDAO.create(newUser))
-            }
-            route("/{id}") {
-                get {
-                    val userId = call.parameters["id"]?.toIntOrNull()
+        }
+        post("/login") {
+            val loginRequest = call.receive<LoginRequest>()
 
-                    if (userId == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid user id")
-                        return@get
+            when (val userResult = UserDAO.findByUsername(loginRequest.username)) {
+                is Result.Success -> {
+                    val user = userResult.data
+
+                    if (BCrypt.checkpw(loginRequest.password, user.password)) {
+                        val token = JwtService.generateToken(user.id, user.username)
+                        call.respond(JwtResponse(token, user))
                     }
-                    respondResult(call, UserDAO.getById(userId))
+                    else {
+                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid credentials"))
+                    }
                 }
-                put {
-                    val userId = call.parameters["id"]?.toIntOrNull()
-
-                    if (userId == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid user id")
-                        return@put
-                    }
-
-                    val updatedUser = call.receive<UserRequest>()
-                    respondResult(call, UserDAO.update(userId, updatedUser))
-                }
-                delete {
-                    val userId = call.parameters["id"]?.toIntOrNull()
-
-                    if (userId == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid user id")
-                        return@delete
-                    }
-                    respondResult(call, UserDAO.delete(userId))
+                else -> {
+                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid credentials"))
                 }
             }
         }
-        route("/products") {
-            get {
-                respondResult(call, ProductDAO.getAll())
-            }
-            post {
-                val newProduct = call.receive<ProductRequest>()
-                respondResult(call, ProductDAO.create(newProduct))
-            }
-            route("/{id}") {
+        authenticate("jwt") {
+            route("/users") {
                 get {
-                    val productId = call.parameters["id"]?.toIntOrNull()
-
-                    if (productId == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid product id")
-                        return@get
-                    }
-                    respondResult(call, ProductDAO.getById(productId))
+                    call.respondResult(UserDAO.getAll())
                 }
-                put {
-                    val productId = call.parameters["id"]?.toIntOrNull()
-
-                    if (productId == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid product id")
-                        return@put
+                route("/{id}") {
+                    get {
+                        val userId = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "Invalid user ID.")
+                        )
+                        call.respondResult(UserDAO.getById(userId))
                     }
+                    put {
+                        val userId = call.parameters["id"]?.toIntOrNull() ?: return@put call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "Invalid user ID.")
+                        )
 
-                    val updatedProduct = call.receive<ProductRequest>()
-                    respondResult(call, ProductDAO.update(productId, updatedProduct))
+                        val updatedUser = call.receive<RegisterRequest>()
+                        call.respondResult(UserDAO.update(userId, updatedUser))
+                    }
+                    delete {
+                        val userId = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "Invalid user ID.")
+                        )
+                        call.respondResult(UserDAO.delete(userId))
+                    }
                 }
-                delete {
-                    val productId = call.parameters["id"]?.toIntOrNull()
-
-                    if (productId == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Invalid product id")
-                        return@delete
+            }
+            route("/products") {
+                get {
+                    call.respondResult(ProductDAO.getAll())
+                }
+                post {
+                    val newProduct = call.receive<ProductRequest>()
+                    call.respondResult(ProductDAO.create(newProduct))
+                }
+                route("/{id}") {
+                    get {
+                        val productId = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "Invalid product ID.")
+                        )
+                        call.respondResult(ProductDAO.getById(productId))
                     }
-                    respondResult(call, ProductDAO.delete(productId))
+                    put {
+                        val productId = call.parameters["id"]?.toIntOrNull() ?: return@put call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "Invalid product ID.")
+                        )
+
+                        val updatedProduct = call.receive<ProductRequest>()
+                        call.respondResult(ProductDAO.update(productId, updatedProduct))
+                    }
+                    delete {
+                        val productId = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "Invalid product ID.")
+                        )
+                        call.respondResult(ProductDAO.delete(productId))
+                    }
                 }
             }
         }
