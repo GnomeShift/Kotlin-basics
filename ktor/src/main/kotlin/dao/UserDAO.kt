@@ -52,10 +52,10 @@ object UserDAO {
         }
     }
 
-    fun update(request: User): Result<User> {
+    fun update(id: Int, request: UserRequest): Result<User> {
         return try {
             transaction(db) {
-                val userEntity = UserEntity.findById(request.id)
+                val userEntity = UserEntity.findById(id)
 
                 if (userEntity != null) {
                     userEntity.name = request.name

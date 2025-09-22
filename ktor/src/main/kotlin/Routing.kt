@@ -1,12 +1,10 @@
 package com.gnomeshift
 
 import com.gnomeshift.dao.ProductDAO
-import com.gnomeshift.entities.User
 import com.gnomeshift.dao.Result
 import com.gnomeshift.dao.UserDAO
 import com.gnomeshift.dto.ProductRequest
 import com.gnomeshift.dto.UserRequest
-import com.gnomeshift.entities.Product
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -98,8 +96,8 @@ fun Application.configureRouting() {
                         return@put
                     }
 
-                    val updatedUser = call.receive<User>()
-                    respondResult(call, UserDAO.update(updatedUser))
+                    val updatedUser = call.receive<UserRequest>()
+                    respondResult(call, UserDAO.update(userId, updatedUser))
                 }
                 delete {
                     val userId = call.parameters["id"]?.toIntOrNull()
@@ -138,8 +136,8 @@ fun Application.configureRouting() {
                         return@put
                     }
 
-                    val updatedProduct = call.receive<Product>()
-                    respondResult(call, ProductDAO.update(updatedProduct))
+                    val updatedProduct = call.receive<ProductRequest>()
+                    respondResult(call, ProductDAO.update(productId, updatedProduct))
                 }
                 delete {
                     val productId = call.parameters["id"]?.toIntOrNull()

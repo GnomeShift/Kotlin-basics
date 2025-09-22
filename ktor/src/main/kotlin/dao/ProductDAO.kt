@@ -52,10 +52,10 @@ object ProductDAO {
         }
     }
 
-    fun update(request: Product): Result<Product> {
+    fun update(id: Int, request: ProductRequest): Result<Product> {
         return try {
             transaction(db) {
-                val productEntity = ProductEntity.findById(request.id)
+                val productEntity = ProductEntity.findById(id)
 
                 if (productEntity != null) {
                     productEntity.name = request.name
