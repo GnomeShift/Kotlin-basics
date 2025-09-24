@@ -8,7 +8,10 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
+import org.slf4j.LoggerFactory
 import java.security.Principal
+
+private val logger = LoggerFactory.getLogger("Auth")
 
 data class UserIdPrincipal(val userId: Int, val username: String) : Principal {
     override fun getName(): String = username
@@ -32,13 +35,22 @@ fun Application.configureAuthentication() {
                 val username = credential.subject
 
                 if (userId != null && username != null) {
-                    val userResult = UserDAO.getById(userId)
+                    when (val userResult = UserDAO.getById(userId)) {
+                        is Result.Success -> {
+                            val user = userResult.data
 
-                    if (userResult is Result.Success && userResult.data.username == username) {
-                        UserIdPrincipal(userId, username)
-                    }
-                    else {
-                        null
+                            if (user.username == username) {
+                                UserIdPrincipal(userId, username)
+                            }
+                            else {
+                                logger.warn("Detected username mismatch for id: $userId. Token username: $username, DB username: ${user.username}")
+                                null
+                            }
+                        }
+                        is Result.Error -> {
+                            logger.error("Error getting user by ID $userId during token validation.", userResult.exception)
+                            null
+                        }
                     }
                 }
                 else {
@@ -46,10 +58,7 @@ fun Application.configureAuthentication() {
                 }
             }
             challenge { _, _ ->
-                call.respond(
-                    HttpStatusCode.Unauthorized,
-                    mapOf("error" to "Token is invalid or expired.")
-                )
+                call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Token is invalid or expired."))
             }
         }
     }

@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
 import io.ktor.server.config.ApplicationConfig
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.security.KeyFactory
 import java.security.interfaces.RSAPrivateKey
@@ -11,6 +12,8 @@ import java.security.interfaces.RSAPublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
+
+private val logger = LoggerFactory.getLogger("JwtService")
 
 fun decodePemContent(pemContent: String): ByteArray {
     val base64Encoded = pemContent
@@ -68,6 +71,7 @@ object JwtService {
             algorithm = Algorithm.RSA256(publicKey, privateKey)
         }
         catch (e: Exception) {
+            logger.error("Failed to initialize JwtService.", e)
             throw Exception("Failed to initialize JwtService.", e)
         }
     }
