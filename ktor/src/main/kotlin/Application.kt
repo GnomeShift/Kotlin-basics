@@ -2,6 +2,7 @@ package com.gnomeshift
 
 import com.gnomeshift.db.configureDB
 import com.gnomeshift.security.configureAuthentication
+import com.gnomeshift.swagger.configureOpenAPI
 import io.ktor.server.application.*
 import org.slf4j.LoggerFactory
 
@@ -20,4 +21,7 @@ fun Application.module() {
 
     logger.info("Configuring routing...")
     configureRouting()
+
+    logger.info("Configuring OpenAPI...")
+    configureOpenAPI()
 }

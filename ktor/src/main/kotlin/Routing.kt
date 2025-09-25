@@ -4,10 +4,17 @@ import com.gnomeshift.dao.ProductDAO
 import com.gnomeshift.dao.Result
 import com.gnomeshift.dao.UserDAO
 import com.gnomeshift.dto.ProductRequest
+import com.gnomeshift.entities.Product
+import com.gnomeshift.entities.User
 import com.gnomeshift.security.JwtResponse
 import com.gnomeshift.security.JwtService
 import com.gnomeshift.security.LoginRequest
 import com.gnomeshift.security.RegisterRequest
+import io.github.tabilzad.ktor.annotations.GenerateOpenApi
+import io.github.tabilzad.ktor.annotations.KtorDescription
+import io.github.tabilzad.ktor.annotations.KtorResponds
+import io.github.tabilzad.ktor.annotations.ResponseEntry
+import io.github.tabilzad.ktor.annotations.Tag
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -41,6 +48,7 @@ suspend fun <T> ApplicationCall.respondResult(result: Result<T>) {
     }
 }
 
+@GenerateOpenApi
 fun Application.configureRouting() {
     install(ContentNegotiation) {
         json()
@@ -51,13 +59,38 @@ fun Application.configureRouting() {
         }
     }
 
+    @Tag(["All endpoints"])
     routing {
+        @KtorDescription(
+            summary = "Default endpoint",
+            description = "Returns \"Hello World!\""
+        )
+        @KtorResponds([
+            ResponseEntry("200", String::class)
+        ])
         get("/") {
             call.respondText("Hello World!")
         }
+
+        @KtorDescription(
+            summary = "About",
+            description = "Returns app details"
+        )
+        @KtorResponds([
+            ResponseEntry("200", String::class)
+        ])
         get("/about") {
             call.respondText("This is a Kotlin app with Ktor!")
         }
+
+        @KtorDescription(
+            summary = "Hello",
+            description = "Returns greeting with provided name"
+        )
+        @KtorResponds([
+            ResponseEntry("200", String::class),
+            ResponseEntry("400", String::class, description = "If name is missing")
+        ])
         get("/hello/{name}") {
             try {
                 call.respondText("Hello, ${call.parameters["name"]}")
@@ -66,15 +99,46 @@ fun Application.configureRouting() {
                 call.respond(HttpStatusCode.BadRequest, "${e.message}")
             }
         }
+
+        @KtorDescription(
+            summary = "Echo",
+            description = "Returns provided text"
+        )
         post("/echo") {
             call.respondText(call.receiveText())
         }
+
+        @KtorDescription(
+            summary = "Search",
+            description = "Returns \"Search:\" with provided text"
+        )
+        @KtorResponds([
+            ResponseEntry("200", String::class)
+        ])
         get("/search") {
             call.respondText("Search: ${call.request.queryParameters["query"]}")
         }
+
+        @KtorDescription(
+            summary = "Ping",
+            description = "Returns pong"
+        )
+        @KtorResponds([
+            ResponseEntry("200", String::class)
+        ])
         get("/ping") {
             call.respondText("pong")
         }
+
+        @Tag(["Auth"])
+        @KtorDescription(
+            summary = "Registration",
+            description = "Register new user"
+        )
+        @KtorResponds([
+            ResponseEntry("201", User::class, description = "User registered successfully"),
+            ResponseEntry("400", Nothing::class, description = "Invalid request body")
+        ])
         post("/register") {
             val request = call.receive<RegisterRequest>()
 
@@ -83,6 +147,17 @@ fun Application.configureRouting() {
                 is Result.Error -> call.respondResult(result)
             }
         }
+
+        @Tag(["Auth"])
+        @KtorDescription(
+            summary = "Login",
+            description = "Authenticate user and returns JWT token"
+        )
+        @KtorResponds([
+            ResponseEntry("200", JwtResponse::class, description = "Successful login"),
+            ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+            ResponseEntry("401", JwtResponse::class, description = "Invalid credentials")
+        ])
         post("/login") {
             val loginRequest = call.receive<LoginRequest>()
 
@@ -104,11 +179,28 @@ fun Application.configureRouting() {
             }
         }
         authenticate("jwt") {
+            @Tag(["Users"])
             route("/users") {
+                @KtorDescription(
+                    summary = "Get all users",
+                    description = "Returns all users"
+                )
+                @KtorResponds([
+                    ResponseEntry("200", User::class, description = "Success"),
+                    ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                ])
                 get {
                     call.respondResult(UserDAO.getAll())
                 }
                 route("/{id}") {
+                    @KtorDescription(
+                        summary = "Get user by id",
+                        description = "Returns user by id"
+                    )
+                    @KtorResponds([
+                        ResponseEntry("200", User::class, description = "Success"),
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ])
                     get {
                         val userId = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(
                             HttpStatusCode.BadRequest,
@@ -116,6 +208,15 @@ fun Application.configureRouting() {
                         )
                         call.respondResult(UserDAO.getById(userId))
                     }
+
+                    @KtorDescription(
+                        summary = "Update user by id",
+                        description = "Updates user by id"
+                    )
+                    @KtorResponds([
+                        ResponseEntry("200", User::class, description = "Success"),
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ])
                     put {
                         val userId = call.parameters["id"]?.toIntOrNull() ?: return@put call.respond(
                             HttpStatusCode.BadRequest,
@@ -125,6 +226,15 @@ fun Application.configureRouting() {
                         val updatedUser = call.receive<RegisterRequest>()
                         call.respondResult(UserDAO.update(userId, updatedUser))
                     }
+
+                    @KtorDescription(
+                        summary = "Delete user by id",
+                        description = "Deletes user by id"
+                    )
+                    @KtorResponds([
+                        ResponseEntry("204", Nothing::class, description = "Success"),
+                        ResponseEntry("500", Nothing::class, description = "Invalid request body")
+                    ])
                     delete {
                         val userId = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
                             HttpStatusCode.BadRequest,
@@ -134,15 +244,42 @@ fun Application.configureRouting() {
                     }
                 }
             }
+
+            @Tag(["Products"])
             route("/products") {
+                @KtorDescription(
+                    summary = "Get all products",
+                    description = "Returns all products"
+                )
+                @KtorResponds([
+                    ResponseEntry("200", Product::class, description = "Success"),
+                    ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                ])
                 get {
                     call.respondResult(ProductDAO.getAll())
                 }
+
+                @KtorDescription(
+                    summary = "Add new product",
+                    description = "Adds new product"
+                )
+                @KtorResponds([
+                    ResponseEntry("201", Product::class, description = "Success"),
+                    ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                ])
                 post {
                     val newProduct = call.receive<ProductRequest>()
                     call.respondResult(ProductDAO.create(newProduct))
                 }
                 route("/{id}") {
+                    @KtorDescription(
+                        summary = "Get product by id",
+                        description = "Returns product by id"
+                    )
+                    @KtorResponds([
+                        ResponseEntry("200", Product::class, description = "Success"),
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ])
                     get {
                         val productId = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(
                             HttpStatusCode.BadRequest,
@@ -150,6 +287,15 @@ fun Application.configureRouting() {
                         )
                         call.respondResult(ProductDAO.getById(productId))
                     }
+
+                    @KtorDescription(
+                        summary = "Update product by id",
+                        description = "Updates product by id"
+                    )
+                    @KtorResponds([
+                        ResponseEntry("200", Product::class, description = "Success"),
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ])
                     put {
                         val productId = call.parameters["id"]?.toIntOrNull() ?: return@put call.respond(
                             HttpStatusCode.BadRequest,
@@ -159,6 +305,15 @@ fun Application.configureRouting() {
                         val updatedProduct = call.receive<ProductRequest>()
                         call.respondResult(ProductDAO.update(productId, updatedProduct))
                     }
+
+                    @KtorDescription(
+                        summary = "Delete product by id",
+                        description = "Deletes product by id"
+                    )
+                    @KtorResponds([
+                        ResponseEntry("204", Nothing::class, description = "Success"),
+                        ResponseEntry("400", Nothing::class, description = "Invalid product id")
+                    ])
                     delete {
                         val productId = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
                             HttpStatusCode.BadRequest,
