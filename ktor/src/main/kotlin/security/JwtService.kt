@@ -3,6 +3,7 @@ package com.gnomeshift.security
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.gnomeshift.entities.UserRole
 import io.ktor.server.config.ApplicationConfig
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -76,16 +77,18 @@ object JwtService {
         }
     }
 
-    fun generateToken(userId: Int, username: String): String {
+    fun generateToken(userId: Int, username: String, roles: List<UserRole>): String {
         return JWT.create()
             .withAudience(jwtAudience)
             .withIssuer(jwtIssuer)
             .withSubject(username)
             .withClaim("userId", userId)
+            .withClaim("roles", roles.map { it.name })
             .withExpiresAt(Date(System.currentTimeMillis() + tokenExpirationMinutes * 60 * 1000))
             .sign(algorithm)
     }
 
+    //todo убрать за ненадобностью
     fun verifyToken(token: String): DecodedJWT? {
         return try {
             val verifier = JWT.require(algorithm)

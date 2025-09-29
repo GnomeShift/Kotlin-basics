@@ -1,12 +1,16 @@
 package com.gnomeshift.dao
 
 import com.gnomeshift.db.db
+import com.gnomeshift.schemas.Roles
+import com.gnomeshift.entities.RoleEntity
 import com.gnomeshift.entities.User
 import com.gnomeshift.entities.UserEntity
 import com.gnomeshift.entities.UserEntity.Companion.find
+import com.gnomeshift.schemas.UserRoles
 import com.gnomeshift.schemas.UserService
 import com.gnomeshift.security.RegisterRequest
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.mindrot.jbcrypt.BCrypt
 
@@ -25,11 +29,21 @@ object UserDAO {
                     this.username = request.username
                     this.password = hashedPassword // pragma: allowlist-secret
                 }
+
+                request.roles.forEach { role ->
+                    val roleEntity = RoleEntity.find { Roles.name eq role.name }.firstOrNull()
+                        ?: throw Exception("Role ${role.name} doesn't exist.")
+
+                    UserRoles.insert {
+                        it[UserRoles.userId] = newUserEntity.id
+                        it[UserRoles.roleId] = roleEntity.id
+                    }
+                }
                 Result.Success(newUserEntity.toDto())
             }
         }
         catch (e: Exception) {
-            throw Exception(e.message)
+            throw Exception(e.message, e.cause)
         }
     }
 

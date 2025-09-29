@@ -6,10 +6,13 @@ import com.gnomeshift.dao.UserDAO
 import com.gnomeshift.dto.ProductRequest
 import com.gnomeshift.entities.Product
 import com.gnomeshift.entities.User
+import com.gnomeshift.entities.UserRole
 import com.gnomeshift.security.JwtResponse
 import com.gnomeshift.security.JwtService
 import com.gnomeshift.security.LoginRequest
 import com.gnomeshift.security.RegisterRequest
+import com.gnomeshift.security.UserIdPrincipal
+import com.gnomeshift.security.hasRole
 import io.github.tabilzad.ktor.annotations.GenerateOpenApi
 import io.github.tabilzad.ktor.annotations.KtorDescription
 import io.github.tabilzad.ktor.annotations.KtorResponds
@@ -25,6 +28,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.mindrot.jbcrypt.BCrypt
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("Routing")
 
 suspend fun <T> ApplicationCall.respondResult(result: Result<T>) {
     when (result) {
@@ -166,7 +172,7 @@ fun Application.configureRouting() {
                     val user = userResult.data
 
                     if (BCrypt.checkpw(loginRequest.password, user.password)) {
-                        val token = JwtService.generateToken(user.id, user.username)
+                        val token = JwtService.generateToken(user.id, user.username, user.roles)
                         call.respond(JwtResponse(token, user))
                     }
                     else {
@@ -190,6 +196,11 @@ fun Application.configureRouting() {
                     ResponseEntry("400", Nothing::class, description = "Invalid request body")
                 ])
                 get {
+                    if (!call.hasRole(UserRole.ADMIN)) {
+                        logger.warn("Access denied for ${call.principal<UserIdPrincipal>()?.userId}")
+                        call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                        return@get
+                    }
                     call.respondResult(UserDAO.getAll())
                 }
                 route("/{id}") {
@@ -206,6 +217,13 @@ fun Application.configureRouting() {
                             HttpStatusCode.BadRequest,
                             mapOf("error" to "Invalid user ID.")
                         )
+                        val idFromToken = call.principal<UserIdPrincipal>()?.userId
+
+                        if (idFromToken != userId && !call.hasRole(UserRole.ADMIN)) {
+                            logger.warn("Access denied for user with id $idFromToken.")
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                            return@get
+                        }
                         call.respondResult(UserDAO.getById(userId))
                     }
 
@@ -222,6 +240,13 @@ fun Application.configureRouting() {
                             HttpStatusCode.BadRequest,
                             mapOf("error" to "Invalid user ID.")
                         )
+                        val idFromToken = call.principal<UserIdPrincipal>()?.userId
+
+                        if (idFromToken != userId && !call.hasRole(UserRole.ADMIN)) {
+                            logger.warn("Access denied for user with id $idFromToken")
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                            return@put
+                        }
 
                         val updatedUser = call.receive<RegisterRequest>()
                         call.respondResult(UserDAO.update(userId, updatedUser))
@@ -240,6 +265,13 @@ fun Application.configureRouting() {
                             HttpStatusCode.BadRequest,
                             mapOf("error" to "Invalid user ID.")
                         )
+                        val idFromToken = call.principal<UserIdPrincipal>()?.userId
+
+                        if (idFromToken != userId && !call.hasRole(UserRole.ADMIN)) {
+                            logger.warn("Access denied for user with id $idFromToken.")
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                            return@delete
+                        }
                         call.respondResult(UserDAO.delete(userId))
                     }
                 }
@@ -268,6 +300,12 @@ fun Application.configureRouting() {
                     ResponseEntry("400", Nothing::class, description = "Invalid request body")
                 ])
                 post {
+                    if (!call.hasRole(UserRole.ADMIN)) {
+                        logger.warn("Access denied for user with id ${call.principal<UserIdPrincipal>()?.userId}")
+                        call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                        return@post
+                    }
+
                     val newProduct = call.receive<ProductRequest>()
                     call.respondResult(ProductDAO.create(newProduct))
                 }
@@ -302,6 +340,12 @@ fun Application.configureRouting() {
                             mapOf("error" to "Invalid product ID.")
                         )
 
+                        if (call.hasRole(UserRole.ADMIN)) {
+                            logger.warn("Access denied for user with id ${call.principal<UserIdPrincipal>()?.userId}.")
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                            return@put
+                        }
+
                         val updatedProduct = call.receive<ProductRequest>()
                         call.respondResult(ProductDAO.update(productId, updatedProduct))
                     }
@@ -319,6 +363,12 @@ fun Application.configureRouting() {
                             HttpStatusCode.BadRequest,
                             mapOf("error" to "Invalid product ID.")
                         )
+
+                        if (!call.hasRole(UserRole.ADMIN)) {
+                            logger.warn("Access denied for user with id ${call.principal<UserIdPrincipal>()?.userId}.")
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Access denied."))
+                            return@delete
+                        }
                         call.respondResult(ProductDAO.delete(productId))
                     }
                 }

@@ -8,5 +8,6 @@ data class User(
     var name: String,
     var age: Int,
     val username: String,
-    val password: String // pragma: allowlist-secret
+    val password: String, // pragma: allowlist-secret
+    val roles: List<UserRole>
 )

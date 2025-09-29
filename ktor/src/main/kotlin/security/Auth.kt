@@ -3,6 +3,7 @@ package com.gnomeshift.security
 import com.auth0.jwt.JWT
 import com.gnomeshift.dao.Result
 import com.gnomeshift.dao.UserDAO
+import com.gnomeshift.entities.UserRole
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -15,6 +16,22 @@ private val logger = LoggerFactory.getLogger("Auth")
 
 data class UserIdPrincipal(val userId: Int, val username: String) : Principal {
     override fun getName(): String = username
+}
+
+fun ApplicationCall.hasRole(requiredRole: UserRole): Boolean {
+    val principal = this.principal<UserIdPrincipal>() ?: return false
+    val userId = principal.userId
+
+    return when (val userResult = UserDAO.getById(userId)) {
+        is Result.Success -> {
+            val userRoles = userResult.data.roles
+            userRoles.contains(requiredRole)
+        }
+        is Result.Error -> {
+            logger.error("Error when fetching role $requiredRole for user $userId.", userResult.exception)
+            false
+        }
+    }
 }
 
 fun Application.configureAuthentication() {
