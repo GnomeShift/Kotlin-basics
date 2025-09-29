@@ -193,7 +193,8 @@ fun Application.configureRouting() {
                 )
                 @KtorResponds([
                     ResponseEntry("200", User::class, description = "Success"),
-                    ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                    ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                 ])
                 get {
                     if (!call.hasRole(UserRole.ADMIN)) {
@@ -210,7 +211,8 @@ fun Application.configureRouting() {
                     )
                     @KtorResponds([
                         ResponseEntry("200", User::class, description = "Success"),
-                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                        ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                     ])
                     get {
                         val userId = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(
@@ -233,7 +235,8 @@ fun Application.configureRouting() {
                     )
                     @KtorResponds([
                         ResponseEntry("200", User::class, description = "Success"),
-                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                        ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                     ])
                     put {
                         val userId = call.parameters["id"]?.toIntOrNull() ?: return@put call.respond(
@@ -258,7 +261,8 @@ fun Application.configureRouting() {
                     )
                     @KtorResponds([
                         ResponseEntry("204", Nothing::class, description = "Success"),
-                        ResponseEntry("500", Nothing::class, description = "Invalid request body")
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                        ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                     ])
                     delete {
                         val userId = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
@@ -285,7 +289,8 @@ fun Application.configureRouting() {
                 )
                 @KtorResponds([
                     ResponseEntry("200", Product::class, description = "Success"),
-                    ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                    ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                 ])
                 get {
                     call.respondResult(ProductDAO.getAll())
@@ -297,7 +302,8 @@ fun Application.configureRouting() {
                 )
                 @KtorResponds([
                     ResponseEntry("201", Product::class, description = "Success"),
-                    ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                    ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                    ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                 ])
                 post {
                     if (!call.hasRole(UserRole.ADMIN)) {
@@ -316,7 +322,8 @@ fun Application.configureRouting() {
                     )
                     @KtorResponds([
                         ResponseEntry("200", Product::class, description = "Success"),
-                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                        ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                     ])
                     get {
                         val productId = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(
@@ -332,7 +339,8 @@ fun Application.configureRouting() {
                     )
                     @KtorResponds([
                         ResponseEntry("200", Product::class, description = "Success"),
-                        ResponseEntry("400", Nothing::class, description = "Invalid request body")
+                        ResponseEntry("400", Nothing::class, description = "Invalid request body"),
+                        ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                     ])
                     put {
                         val productId = call.parameters["id"]?.toIntOrNull() ?: return@put call.respond(
@@ -356,7 +364,8 @@ fun Application.configureRouting() {
                     )
                     @KtorResponds([
                         ResponseEntry("204", Nothing::class, description = "Success"),
-                        ResponseEntry("400", Nothing::class, description = "Invalid product id")
+                        ResponseEntry("400", Nothing::class, description = "Invalid product id"),
+                        ResponseEntry("403", Nothing::class, description = "Insufficient privileges")
                     ])
                     delete {
                         val productId = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
