@@ -2,10 +2,10 @@ package com.gnomeshift.db
 
 import com.gnomeshift.entities.RoleEntity
 import com.gnomeshift.entities.UserRole
-import com.gnomeshift.schemas.ProductService
+import com.gnomeshift.schemas.Products
 import com.gnomeshift.schemas.Roles
 import com.gnomeshift.schemas.UserRoles
-import com.gnomeshift.schemas.UserService
+import com.gnomeshift.schemas.Users
 import io.ktor.server.application.*
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -26,9 +26,9 @@ fun Application.configureDB() {
     }
 
     transaction {
-        SchemaUtils.create(UserService.Users, ProductService.Products, Roles, UserRoles)
-        SchemaUtils.addMissingColumnsStatements(UserService.Users, ProductService.Products, Roles, UserRoles)
-        SchemaUtils.createMissingTablesAndColumns(UserService.Users, ProductService.Products, Roles, UserRoles)
+        SchemaUtils.create(Users, Products, Roles, UserRoles)
+        SchemaUtils.addMissingColumnsStatements(Users, Products, Roles, UserRoles)
+        SchemaUtils.createMissingTablesAndColumns(Users, Products, Roles, UserRoles)
 
         val predefinedRoles = RoleEntity.all().map { it.name }.toSet()
         UserRole.entries.forEach { role ->

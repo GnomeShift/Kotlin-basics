@@ -1,13 +1,13 @@
 package com.gnomeshift.dao
 
 import com.gnomeshift.db.db
-import com.gnomeshift.schemas.Roles
 import com.gnomeshift.entities.RoleEntity
 import com.gnomeshift.entities.User
 import com.gnomeshift.entities.UserEntity
 import com.gnomeshift.entities.UserEntity.Companion.find
+import com.gnomeshift.schemas.Roles
 import com.gnomeshift.schemas.UserRoles
-import com.gnomeshift.schemas.UserService
+import com.gnomeshift.schemas.Users
 import com.gnomeshift.security.RegisterRequest
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -18,7 +18,7 @@ object UserDAO {
     fun create(request: RegisterRequest): Result<User> {
         return try {
             transaction(db) {
-                if (find { UserService.Users.username eq request.username }.firstOrNull() != null) {
+                if (find { Users.username eq request.username }.firstOrNull() != null) {
                     return@transaction Result.Error(Exception("User '${request.username}' already exists."))
                 }
 
@@ -62,7 +62,7 @@ object UserDAO {
     fun findByUsername(username: String): Result<User> {
         return try {
             transaction(db) {
-                find { UserService.Users.username eq username }.firstOrNull()?.toDto()?.let { Result.Success(it) }
+                find { Users.username eq username }.firstOrNull()?.toDto()?.let { Result.Success(it) }
                     ?: Result.Error(Exception("User not found"))
             }
         }
@@ -116,15 +116,10 @@ object UserDAO {
     fun delete(id: Int): Result<Unit> {
         return try {
             transaction(db) {
-                val userEntity = UserEntity.findById(id)
+                val userEntity = UserEntity.findById(id) ?: return@transaction Result.Error(Exception("User with id $id not found."))
+                userEntity.delete()
 
-                if (userEntity != null) {
-                    userEntity.delete()
-                    Result.Success(Unit)
-                }
-                else {
-                    Result.Error(Exception("User not found"))
-                }
+                Result.Success(Unit)
             }
         }
         catch (e: Exception) {

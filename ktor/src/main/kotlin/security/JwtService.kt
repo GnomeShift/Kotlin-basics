@@ -87,19 +87,4 @@ object JwtService {
             .withExpiresAt(Date(System.currentTimeMillis() + tokenExpirationMinutes * 60 * 1000))
             .sign(algorithm)
     }
-
-    //todo убрать за ненадобностью
-    fun verifyToken(token: String): DecodedJWT? {
-        return try {
-            val verifier = JWT.require(algorithm)
-                .withAudience(jwtAudience)
-                .withIssuer(jwtIssuer)
-                .build()
-            verifier.verify(token)
-        }
-        catch (e: Exception) {
-            println("JWT verification failed: ${e.message}")
-            null
-        }
-    }
 }

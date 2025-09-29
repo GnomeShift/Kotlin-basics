@@ -48,16 +48,11 @@ object ProductDAO {
     fun update(id: Int, request: ProductRequest): Result<Product> {
         return try {
             transaction(db) {
-                val productEntity = ProductEntity.findById(id)
+                val productEntity = ProductEntity.findById(id) ?: return@transaction Result.Error(Exception("Product with id $id not found."))
+                productEntity.name = request.name
+                productEntity.price = request.price
 
-                if (productEntity != null) {
-                    productEntity.name = request.name
-                    productEntity.price = request.price
-                    Result.Success(productEntity.toDto())
-                }
-                else {
-                    Result.Error(Exception("Product not found"))
-                }
+                Result.Success(productEntity.toDto())
             }
         }
         catch (e: Exception) {
@@ -68,15 +63,10 @@ object ProductDAO {
     fun delete(id: Int): Result<Unit> {
         return try {
             transaction(db) {
-                val productEntity = ProductEntity.findById(id)
+                val productEntity = ProductEntity.findById(id) ?: return@transaction Result.Error(Exception("Product with id $id not found."))
+                productEntity.delete()
 
-                if (productEntity != null) {
-                    productEntity.delete()
-                    Result.Success(Unit)
-                }
-                else {
-                    Result.Error(Exception("Product not found"))
-                }
+                Result.Success(Unit)
             }
         }
         catch (e: Exception) {
